@@ -164,3 +164,6 @@ phenomena/vocab/*.json
 phenomena/circuits/*
 circuits/*
 nohup.out
+
+# Ignore the virtual environment
+env_fc/
