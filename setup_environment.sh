@@ -7,7 +7,7 @@ then
 fi
 
 # Install unzip and vim if not already installed
-apt-get install -y unzip vim
+apt-get install -y unzip vim python3-venv
 
 # Create a virtual environment
 python3 -m venv env_fc
@@ -40,11 +40,11 @@ else
 fi
 
 # Unzip the downloaded dictionary
-if [ -f "dictionaries_pythia-70m-deduped_10.zip" ]; then
+if [ -f "dictionaries_pythia-70m-deduped_10.zip" ] && [ ! -d "dictionaries/" ]; then
     unzip dictionaries_pythia-70m-deduped_10.zip
 else
-    echo "File dictionaries_pythia-70m-deduped_10.zip not found!"
+    echo "File dictionaries_pythia-70m-deduped_10.zip not found or dictionaries/ directory already exists!"
 fi
 
 # Install IPython kernels
-python -m ipykernel install --user --name=env_fc
+python3 -m ipykernel install --user --name=env_fc
