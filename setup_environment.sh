@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Create a virtual environment
+python3 -m venv env_fc
+
+# Activate the virtual environment
+source env_fc/bin/activate
+
+# Upgrade pip within the virtual environment
+pip install --upgrade pip
+
+# Install Jupyter and IPython kernel
+pip install jupyter
+pip install ipykernel
+
+# Install required packages from requirements.txt
+
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt
+else
+    echo "File requirements.txt not found!"
+fi
+
+# Update git submodules
+git submodule update --init
+
+# Check if the pretrained dictionary downloader script exists and run it
+if [ -f "./dictionary_learning/pretrained_dictionary_downloader.sh" ]; then
+    ./dictionary_learning/pretrained_dictionary_downloader.sh
+else
+    echo "Script ./dictionary_learning/pretrained_dictionary_downloader.sh not found!"
+fi
+
+# Install unzip if not already installed
+sudo apt-get install -y unzip
+
+# Unzip the downloaded dictionary
+if [ -f "dictionaries_pythia-70m-deduped_10.zip" ]; then
+    unzip dictionaries_pythia-70m-deduped_10.zip
+else
+    echo "File dictionaries_pythia-70m-deduped_10.zip not found!"
+fi
+
+# Install IPython kernels
+python -m ipykernel install --user --name=env_fc
