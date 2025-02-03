@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if ! command -v python3 &> /dev/null
+then
+    echo "Python3 could not be found. Please install Python3."
+    exit
+fi
+
 # Create a virtual environment
 python3 -m venv env_fc
 
@@ -32,7 +38,7 @@ else
 fi
 
 # Install unzip if not already installed
-sudo apt-get install -y unzip
+apt-get install -y unzip
 
 # Unzip the downloaded dictionary
 if [ -f "dictionaries_pythia-70m-deduped_10.zip" ]; then
