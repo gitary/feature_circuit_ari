@@ -5,7 +5,7 @@ add-apt-repository ppa:deadsnakes/ppa
 
 # Install unzip and vim if not already installed
 apt install python3.11
-apt-get install -y unzip vim python3.11-venv
+apt-get install -y unzip vim python3.11-venv graphviz
 
 # Print the version of Python
 python3.11 --version
