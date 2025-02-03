@@ -9,7 +9,7 @@ fi
 apt-get update && apt-get upgrade
 
 # Install unzip and vim if not already installed
-apt-get install -y unzip vim python3.11.5 python3-venv
+apt-get install -y unzip vim python3.11 python3-venv
 
 # Create a virtual environment
 python3 -m venv env_fc
