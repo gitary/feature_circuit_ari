@@ -6,6 +6,9 @@ then
     exit
 fi
 
+# Install unzip and vim if not already installed
+apt-get install -y unzip vim
+
 # Create a virtual environment
 python3 -m venv env_fc
 
@@ -20,7 +23,6 @@ pip install jupyter
 pip install ipykernel
 
 # Install required packages from requirements.txt
-
 if [ -f "requirements.txt" ]; then
     pip install -r requirements.txt
 else
@@ -30,15 +32,12 @@ fi
 # Update git submodules
 git submodule update --init
 
-# Check if the pretrained dictionary downloader script exists and run it
-if [ -f "./dictionary_learning/pretrained_dictionary_downloader.sh" ]; then
+# Check if folder dictionary doesn't exist and if the pretrained dictionary downloader script exists and run it
+if [ -f "./dictionary_learning/pretrained_dictionary_downloader.sh" ] && [ ! -d "dictionaries/" ]; then
     ./dictionary_learning/pretrained_dictionary_downloader.sh
 else
-    echo "Script ./dictionary_learning/pretrained_dictionary_downloader.sh not found!"
+    echo "Script ./dictionary_learning/pretrained_dictionary_downloader.sh not found or dictionaries/ directory already exists!"
 fi
-
-# Install unzip if not already installed
-apt-get install -y unzip
 
 # Unzip the downloaded dictionary
 if [ -f "dictionaries_pythia-70m-deduped_10.zip" ]; then
