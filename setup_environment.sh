@@ -29,7 +29,7 @@ pip install --upgrade pip
 pip install jupyter
 pip install ipykernel
 pip install ipywidgets
-jupyter nbextension enable --py widgetsnbextension --sys-prefix
+
 
 # Install required packages from requirements.txt
 if [ -f "requirements.txt" ]; then
