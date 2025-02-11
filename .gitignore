@@ -171,3 +171,6 @@ env_fc/
 # Ignore the dictionary directory plus .zip
 dictionaries/*
 dictionaries_pythia-70m-deduped_10.zip
+
+# Ignore Dockerfile
+Dockerfile
