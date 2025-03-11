@@ -7,6 +7,9 @@ import nnsight
 from nnsight import NNsight
 from nnsight import LanguageModel
 
+from transformers.models.gemma2.modeling_gemma2 import Gemma2ForCausalLM
+from transformers.models.gpt2.modeling_gpt2 import GPT2LMHeadModel
+
 class EmbeddingAnalysis:
     def __init__(self, llm, text):
         self.llm = llm
@@ -21,15 +24,33 @@ class EmbeddingAnalysis:
 
     def trace_embeddings(self):
         with self.llm.trace(self.text):
-            self.input_embed = self.llm.transformer.drop.input.save()
+            if isinstance(self.llm._model, GPT2LMHeadModel):
+                self.input_embed = self.llm.transformer.drop.input.save()                     
+
+            if isinstance(self.llm._model, Gemma2ForCausalLM):
+                self.input_embed = self.llm.model.embed_tokens.output.save()
+            
+            else: 
+                print("Model not supported")
 
     def trace_embeddings_through_blocks(self):
+        #residual_after_mlp = gemma.model.layers[2].mlp.output.save()
+        self.trace_embeddings()        
+        self.lst_embeddings_through_blocks = [self.input_embed]
         with self.llm.trace(self.text):
-            self.input_embed = self.llm.transformer.drop.input.save()
-            self.lst_embeddings_through_blocks = [self.input_embed]
-            for i in range(len(self.llm.transformer.h)):
-                residual_after_mlp = self.llm.transformer.h[i].mlp.output.save()
-                self.lst_embeddings_through_blocks.append(residual_after_mlp)
+            if isinstance(self.llm._model, GPT2LMHeadModel):
+                for i in range(len(self.llm.transformer.h)):
+                    residual_after_mlp = self.llm.transformer.h[i].mlp.output.save()
+                    self.lst_embeddings_through_blocks.append(residual_after_mlp)
+
+            if isinstance(self.llm._model, Gemma2ForCausalLM):
+                for i in range(len(self.llm.model.layers)):
+                    residual_after_mlp = self.llm.model.layers[i].mlp.output.save()
+                    self.lst_embeddings_through_blocks.append(residual_after_mlp)    
+            
+            else: 
+                print("Model not supported")
+
         return self.lst_embeddings_through_blocks
 
     def calculate_cosine_similarity_matrix(self, embed=None):
