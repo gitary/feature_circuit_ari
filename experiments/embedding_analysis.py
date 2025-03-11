@@ -1,4 +1,3 @@
-# filepath: /home/ailab/Code/MechInt/feature-circuits/experiments/embedding_analysis.py
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
@@ -8,8 +7,6 @@ import nnsight
 from nnsight import NNsight
 from nnsight import LanguageModel
 
-
-
 class EmbeddingAnalysis:
     def __init__(self, llm, text):
         self.llm = llm
@@ -17,17 +14,39 @@ class EmbeddingAnalysis:
         self.input_embed = None
         self.cosine_similarity_matrix = None
         self.euclidean_distance_matrix = None
+        self.lst_embeddings_through_blocks = None
+        self.lst_cos_through_blocks = []
+        self.lst_euc_through_blocks = []
+        self.lst_L2_norm_through_blocks = []
 
     def trace_embeddings(self):
         with self.llm.trace(self.text):
             self.input_embed = self.llm.transformer.drop.input.save()
 
-    def calculate_cosine_similarity_matrix(self):
-        input_embed_normalization = F.normalize(self.input_embed[0], p=2, dim=1)  # L2 normalization
+    def trace_embeddings_through_blocks(self):
+        with self.llm.trace(self.text):
+            self.input_embed = self.llm.transformer.drop.input.save()
+            self.lst_embeddings_through_blocks = [self.input_embed]
+            for i in range(len(self.llm.transformer.h)):
+                residual_after_mlp = self.llm.transformer.h[i].mlp.output.save()
+                self.lst_embeddings_through_blocks.append(residual_after_mlp)
+        return self.lst_embeddings_through_blocks
+
+    def calculate_cosine_similarity_matrix(self, embed=None):
+        if embed is None:
+            embed = self.input_embed
+        input_embed_normalization = F.normalize(embed[0], p=2, dim=1)  # L2 normalization
         self.cosine_similarity_matrix = torch.mm(input_embed_normalization, input_embed_normalization.t())
 
-    def calculate_euclidean_distance_matrix(self):
-        self.euclidean_distance_matrix = torch.cdist(self.input_embed[0], self.input_embed[0], p=2)
+    def calculate_euclidean_distance_matrix(self, embed=None):
+        if embed is None:
+            embed = self.input_embed
+        self.euclidean_distance_matrix = torch.cdist(embed[0], embed[0], p=2)
+
+    def calculate_L2_norm(self, embed=None):
+        if embed is None:
+            embed = self.input_embed
+        self.input_embed_norm = torch.norm(embed[0], p=2, dim=1)  # Calculate L2 norm
 
     def plot_pairwise_matrix(self, pairwise_matrix, title):
         tokens = self.llm.tokenizer.encode(self.text)
@@ -49,10 +68,7 @@ class EmbeddingAnalysis:
 
         print(f"Mean Euclidean Distance: {torch.mean(self.euclidean_distance_matrix)}")
         self.plot_pairwise_matrix(self.euclidean_distance_matrix, "Pairwise Euclidean Distance Matrix")
-        #print("Euclidean Distance Matrix:", self.euclidean_distance_matrix)
-        #print("Euclidean Distance Matrix shape:", self.euclidean_distance_matrix.shape)
-        #print("Cosine Similarity Matrix shape:", self.cosine_similarity_matrix.shape)        
-    
+
     def get_mean_cosine_similarity(self):
         self.trace_embeddings()
         self.calculate_cosine_similarity_matrix()
@@ -70,71 +86,6 @@ class EmbeddingAnalysis:
         self.mean_euclidean_distance = torch.mean(self.euclidean_distance_matrix)
         
         return self.mean_euclidean_distance.item()
-    
-    ######### Work in progress #########
-    def trace_embeddings_through_blocks(self):
-        with self.llm.trace(self.text):
-            self.input_embed = self.llm.transformer.drop.input.save()
-            # Access the residual stream after the MLP
-            self.lst_embeddings_through_blocks = [self.input_embed]
-            for i in range(len(self.llm.transformer.h)):
-                residual_after_mlp = self.llm.transformer.h[i].mlp.output.save()
-                self.lst_embeddings_through_blocks.append(residual_after_mlp)
-        
-        return self.lst_embeddings_through_blocks        
-
-                
-            
-            
-    def analyze_through_blocks(self):
-        for embs in self.trace_embeddings_through_blocks(): 
-            self.calculate_cosine_similarity_matrix()
-            self.calculate_euclidean_distance_matrix()        
-            
-            print(f"Mean Cosine Similarity: {torch.mean(self.cosine_similarity_matrix)}")
-            self.plot_pairwise_matrix(self.cosine_similarity_matrix, "Pairwise Cosine Similarity Matrix")
-
-            print(f"Mean Euclidean Distance: {torch.mean(self.euclidean_distance_matrix)}")
-            self.plot_pairwise_matrix(self.euclidean_distance_matrix, "Pairwise Euclidean Distance Matrix")
-            #print("Euclidean Distance Matrix:", self.euclidean_distance_matrix)
-            #print("Euclidean Distance Matrix shape:", self.euclidean_distance_matrix.shape)
-            #print("Cosine Similarity Matrix shape:", self.cosine_similarity_matrix.shape)
-
-
-
-
-
-class BlocksEmbeddingAnalysis:
-    def __init__(self, llm, text):
-        self.llm = llm
-        self.text = text
-        self.input_embed = None
-        self.cosine_similarity_matrix = None
-        self.euclidean_distance_matrix = None
-    
-    def trace_embeddings_through_blocks(self):
-        with self.llm.trace(self.text):
-            self.input_embed = self.llm.transformer.drop.input.save()
-            # Access the residual stream after the MLP
-            self.lst_embeddings_through_blocks = [self.input_embed]
-            for i in range(len(self.llm.transformer.h)):
-                residual_after_mlp = self.llm.transformer.h[i].mlp.output.save()
-                self.lst_embeddings_through_blocks.append(residual_after_mlp)
-        
-        return self.lst_embeddings_through_blocks   
-
-
-    def calculate_cosine_similarity_matrix(self, embed):
-        input_embed_normalization = F.normalize(embed[0], p=2, dim=1)  # L2 normalization
-        self.cosine_similarity_matrix = torch.mm(input_embed_normalization, input_embed_normalization.t())
-
-    def calculate_L2_norm(self, embed):
-        self.input_embed_norm = torch.norm(embed[0], p=2, dim=1)  # Calculate L2 norm      
-       
-
-    def calculate_euclidean_distance_matrix(self, embed):
-        self.euclidean_distance_matrix = torch.cdist(embed[0], embed[0], p=2)
-
 
     def analyze_through_blocks(self):
         self.lst_cos_through_blocks = []
@@ -149,44 +100,22 @@ class BlocksEmbeddingAnalysis:
             self.lst_euc_through_blocks.append(torch.mean(self.euclidean_distance_matrix).item())
             self.lst_L2_norm_through_blocks.append(torch.mean(self.input_embed_norm).item())       
 
-        # Plotting the mean cosine similarity through blocks
+        # Define common plot parameters
         fig_width = 7
         fig_height = 2
+        x_range = range(len(self.lst_cos_through_blocks))
 
-        plt.figure(figsize=(fig_width, fig_height))
-        plt.plot(range(len(self.lst_cos_through_blocks)), self.lst_cos_through_blocks, 'o--', label='Mean Cosine Similarity')
-        plt.xlabel('Block Index')
-        plt.ylabel('Mean Cosine Similarity')
-        plt.title('Mean Cosine Similarity Through Blocks')
-        plt.legend()
-        plt.show()
+        # Plotting function
+        def plot_metric_through_blocks(metric_list, ylabel, title, label):
+            plt.figure(figsize=(fig_width, fig_height))
+            plt.plot(x_range, metric_list, 'o--', label=label)
+            plt.xlabel('Block Index')
+            plt.ylabel(ylabel)
+            plt.title(title)
+            plt.legend()
+            plt.show()
 
-        # Plotting the mean Euclidean Distance through blocks
-        plt.figure(figsize=(fig_width, fig_height))
-        plt.plot(range(len(self.lst_euc_through_blocks)), self.lst_euc_through_blocks, 'o--', label='Mean Euclidean Distance')
-        plt.xlabel('Block Index')
-        plt.ylabel('Mean Euclidean Distance')
-        plt.title('Mean Euclidean Distance Through Blocks')
-        plt.legend()
-        plt.show()
-
-        # Plotting the mean L2 norm through blocks
-        plt.figure(figsize=(fig_width, fig_height))
-        plt.plot(range(len(self.lst_L2_norm_through_blocks)), self.lst_L2_norm_through_blocks, 'o--', label='Mean embedding\'s L2 norm')
-        plt.xlabel('Block Index')
-        plt.ylabel('Mean L2 norm')
-        plt.title('Mean embedding\'s L2 norm Through Blocks')
-        plt.legend()
-        plt.show()
-
-        #return self.lst_cos_through_blocks, self.lst_euc_through_blocks
-        
-
-    
-
-                
-            
-            
-
-
-
+        # Plotting the metrics through blocks
+        plot_metric_through_blocks(self.lst_cos_through_blocks, 'Mean Cosine Similarity', 'Mean Cosine Similarity Through Blocks', 'Mean Cosine Similarity')
+        plot_metric_through_blocks(self.lst_euc_through_blocks, 'Mean Euclidean Distance', 'Mean Euclidean Distance Through Blocks', 'Mean Euclidean Distance')
+        plot_metric_through_blocks(self.lst_L2_norm_through_blocks, 'Mean L2 norm', 'Mean embedding\'s L2 norm Through Blocks', 'Mean embedding\'s L2 norm')
